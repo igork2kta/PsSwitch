@@ -3,6 +3,8 @@
 #include "fauxmoESP.h"
 
 #include <EEPROM.h>
+#include "Ota.h"
+//#include <HTTPClient.h>
  // -----------------------------------------------------------------------------
 // UDP
 // -----------------------------------------------------------------------------
@@ -106,7 +108,8 @@ String fauxmoESP::_deviceJson(unsigned char id, bool all = true) {
             device.value,
             device.timerState ? "true" : "false",
             timerMinutes,
-            startState ? "true" : "false"
+            startState ? "true" : "false",
+            otaState ? "true" : "false"
 
         );
     } else {
@@ -329,6 +332,21 @@ bool fauxmoESP::_onTCPControl(AsyncClient * client, String url, String body) {
                 return true;
             }
 
+              // "otaState" request
+            else if (url.indexOf("otaState") > 0) {
+                DEBUG_MSG_FAUXMO("[FAUXMO] Handling otaState request\n");
+
+                //Search for the state in the body {"state":"true"}
+                int pos = body.indexOf("true");
+
+                if (pos > 0) setOtaState(true);
+                else setOtaState(false);
+
+                _sendTCPResponse(client, "200 OK", (char*) "Sucesso!", "text/xml");
+
+                return true;
+            }
+
             else if ((url.indexOf("reset") > 0) && (body.length() > 0)) {
                 int pos = body.indexOf("key");
                 if (pos > 0) {
@@ -532,25 +550,21 @@ int fauxmoESP::getDeviceId(char * device_name) {
 }
 
 bool fauxmoESP::renameDevice(unsigned char id, String device_name, AsyncClient * client) {
-
+//Acentos ocupam mais do que um espaço na serial
     if (id < _devices.size()) {
-        //free(_devices[id].name);  
-        //_devices[id].name = strdup(device_name);
-        //strcpy(_devices[id].name, device_name.c_str());
+        
+        //Cada dispositivo possui um espaço de 25 bytes para armazenar seu nome
+        // TAMANHO * (ID[começa em 0] + 1) - TAMANHO
+        // EX: 25 * (0 + 1) - 25 = 0
+        // EX2: 25 * (1 + 1) -25 = 25
+        // EX3: 25 * (2 + 1) - 25 = 50
 
-        //Cada dispositivo possui um espaço de 16 bytes para armazenar seu nome
-        // TAMANHO X (ID[começa em 0] + 1) - TAMANHO
-        // EX: 16 * (0 + 1) - 16 = 0
-        // EX2: 16 * (1 + 1) -16 = 16
-        // EX3: 16 * (2 + 1) - 16 = 32
-
-        int startAdress = 16 * (id + 1) - 16;
+        int startAdress = *nameLenth * (id + 1) - *nameLenth;
         EEPROM.begin(512);
 
-        if (device_name.length() > EEPROM.length() || device_name.length() > 16 || device_name == "") { // verificamos se a string cabe na memória a partir do endereço desejado
+        if (device_name.length() > EEPROM.length() || device_name.length() > *nameLenth || device_name == "") { // verificamos se a string cabe na memória a partir do endereço desejado
             _sendTCPResponse(client, "400", (char*) "Nome muito grande!", "text/xml");
             return false;
-            //Serial.println ("A sua String não cabe na EEPROM"); // Caso não caiba mensagem de erro é mostrada
         }
 
         #ifdef ESP32
@@ -570,6 +584,10 @@ bool fauxmoESP::renameDevice(unsigned char id, String device_name, AsyncClient *
         _sendTCPResponse(client, "200 OK",(char*) "Dispositivo renomeado com sucesso!", "text/xml");
         DEBUG_MSG_FAUXMO("[FAUXMO] Device #%d renamed to '%s'\n", id, & device_name);
         
+        //free(_devices[id].name);  
+        strcpy(_devices[id].name, device_name.c_str());
+
+        /*
         //Delay para dar tempo de enviar a resposta
         delay(3000);
         #ifdef ESP32
@@ -577,7 +595,7 @@ bool fauxmoESP::renameDevice(unsigned char id, String device_name, AsyncClient *
         #else
         ESP.reset();
         #endif
-
+        */
         return true;
     }
 
@@ -592,6 +610,16 @@ void fauxmoESP::setStartState(bool state) {
     EEPROM.end();
     startState = state; 
     DEBUG_MSG_FAUXMO("Status de inicialização alterado com sucesso!");
+
+    return;
+    
+}
+
+void fauxmoESP::setOtaState(bool state) {
+    otaState = state; 
+
+    if(otaState)initializeOTAService();
+    else stopOTAService();
 
     return;
     
@@ -676,7 +704,55 @@ void fauxmoESP::handle() {
         _handleUDP();
         handleTimer();
     }
+    if(otaState) ArduinoOTA.handle();
+    
+    //_handleApi();
 }
+
+/*
+void fauxmoESP::_handleApi(){
+
+      HTTPClient http;
+
+      // Define a URL do servidor
+      String url = "http://localhost:3000/api/device/getStatus";
+
+      // Inicia a requisição
+      http.begin(url);
+
+      // Define o campo "Authorization" no cabeçalho
+      http.addHeader("Authorization", "1c7336d438c1ab9c1b722c01f2d655635a288aab5691fd95f1da9cd941fecb9d");
+
+      // Cria o JSON para o corpo da requisição
+      StaticJsonDocument<200> jsonDoc;
+      jsonDoc["UUID"] = "24:A0:C4:58:F4:F0:00:00-00"; // Substitua pelo UUID desejado
+
+      String jsonString;
+      serializeJson(jsonDoc, jsonString);
+
+      // Define o tipo de conteúdo do cabeçalho
+      http.addHeader("Content-Type", "application/json");
+
+      // Envia a requisição POST com o JSON no corpo
+      int httpResponseCode = http.POST(jsonString);
+
+      // Verifica o código de resposta
+      if (httpResponseCode > 0) {
+          String response = http.getString(); // Obtém a resposta do servidor
+          Serial.println(httpResponseCode); // Exibe o código de resposta
+          Serial.println(response); // Exibe a resposta
+      } else {
+          Serial.print("Erro na requisição: ");
+          Serial.println(httpResponseCode);
+      }
+
+      // Finaliza a conexão
+      http.end();
+}
+
+*/
+
+
 
 void fauxmoESP::handleTimer() {
 

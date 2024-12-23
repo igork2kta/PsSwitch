@@ -60,6 +60,7 @@ PROGMEM const char FAUXMO_DEVICE_JSON_TEMPLATE[] = "{"
   "\"timerState\": %s,"
   "\"minutes\": %d,"
   "\"startState\": %s,"
+  "\"otaState\": %s,"
 	"\"xy\": [0,0],"
 	"\"hue\": 0,"
 	"\"sat\": 0,"
@@ -73,7 +74,7 @@ PROGMEM const char FAUXMO_DEVICE_JSON_TEMPLATE[] = "{"
         "\"certified\": false,"
         "\"streaming\": {\"renderer\":true,\"proxy\":false}"
     "},"
-    "\"swversion\": \"2.3.0\""
+    "\"swversion\": \"2.3.1\""
 "}";
 
 // Use shorter description template when listing all devices

@@ -47,11 +47,11 @@ THE SOFTWARE.
 #endif
 
 #ifndef DEBUG_FAUXMO_VERBOSE_TCP
-#define DEBUG_FAUXMO_VERBOSE_TCP    false
+#define DEBUG_FAUXMO_VERBOSE_TCP    true
 #endif
 
 #ifndef DEBUG_FAUXMO_VERBOSE_UDP
-#define DEBUG_FAUXMO_VERBOSE_UDP    false
+#define DEBUG_FAUXMO_VERBOSE_UDP    true
 #endif
 
 #include <Arduino.h>
@@ -95,9 +95,12 @@ class fauxmoESP {
         ~fauxmoESP();
 
         bool startState;
+        bool otaState;
+        byte* nameLenth;
         unsigned char addDevice(char * device_name, const char *type, byte pin);
         bool renameDevice(unsigned char id, String device_name, AsyncClient *client);
         void setStartState(bool state);
+        void setOtaState(bool state);
         byte GetDeviceIndex(String* url);
         //bool renameDevice(const char * old_device_name, const char * new_device_name);
         //bool removeDevice(unsigned char id);
@@ -141,6 +144,7 @@ class fauxmoESP {
 
         void _handleUDP();
         void handleTimer();
+        void _handleApi();
         void _onUDPData(const IPAddress remoteIP, unsigned int remotePort, void *data, size_t len);
         void _sendUDPResponse();
 

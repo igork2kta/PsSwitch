@@ -1,4 +1,3 @@
-#include <ArduinoOTA.h>
 #include "Ota.h"
 
 void initializeOTAService(){
@@ -8,14 +7,22 @@ void initializeOTAService(){
   
     //define o que será executado quando o ArduinoOTA iniciar
     ArduinoOTA.onStart([](){ startOTA(); }); //startOTA é uma função criada para simplificar o código 
+
     //define o que será executado quando o ArduinoOTA terminar
-    ArduinoOTA.onEnd([](){ endOTA(); }); //endOTA é uma função criada para simplificar o código 
+    ArduinoOTA.onEnd([](){ Serial.println("\nEnd");; });
+
     //define o que será executado quando o ArduinoOTA estiver gravando
-    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) { progressOTA(progress,total); }); //progressOTA é uma função criada para simplificar o código 
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) { Serial.printf("Progress: %u%%\r", (progress / (total / 100))); }); //progressOTA é uma função criada para simplificar o código 
+
     //define o que será executado quando o ArduinoOTA encontrar um erro
     ArduinoOTA.onError([](ota_error_t error){ errorOTA(error); });//errorOTA é uma função criada para simplificar o código 
+    
     //inicializa ArduinoOTA
     ArduinoOTA.begin();
+}
+
+void stopOTAService(){
+  ArduinoOTA.end();
 }
 
 //funções de exibição dos estágios de upload (start, progress, end e error) do ArduinoOTA
@@ -30,16 +37,6 @@ void startOTA(){
 
     //exibe mensagem junto ao tipo de gravação
     Serial.println("Start updating " + type);
-}
-
-//exibe mensagem
-void endOTA(){
-  Serial.println("\nEnd");
-}
-
-//exibe progresso em porcentagem
-void progressOTA(unsigned int progress, unsigned int total){
-   Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
 }
 
 //caso aconteça algum erro, exibe especificamente o tipo do erro

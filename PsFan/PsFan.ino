@@ -9,6 +9,7 @@
 #include "fauxmoESP.h"
 #include "Ota.h"
 
+
 void wifiSetup();
 String readName(byte);
 void changeDeviceName(String, byte);
@@ -28,42 +29,46 @@ void handleTouch();
 
 //============PARAMETRIZATION==========//
 #define SERIAL_BAUDRATE     115200
-#define DEVICE_TYPE         "PLUG"
-#define TOUCH_ENABLED       false
-#define OUTPUT_PIN_1          0
-//#define OUTPUT_PIN_2        25
-//#define OUTPUT_PIN_3        33
+#define DEVICE_TYPE         "VENTILADOR"
+#define TOUCH_ENABLED       true
+#define OUTPUT_PIN_1          12
+#define OUTPUT_PIN_2          25
+#define OUTPUT_PIN_3          34
 
 //26, 25, 33
 
 #if TOUCH_ENABLED 
     #define INPUT_PIN       4
-    //#define INPUT_PIN2      13
-    //#define INPUT_PIN3      15
-    //#define INPUT_PIN4      32
+    #define INPUT_PIN2      2
+    #define INPUT_PIN3      15
+    #define INPUT_PIN4      0
     bool pressed = false;
     byte touch_sensibility;
 #endif
 
 bool connected = true;
 
+/*
 char static_ip[16] = "10.0.0.137";
 char static_gw[16] = "10.0.0.1";
 char static_sn[16] = "255.255.255.0";
-
+*/
 
 fauxmoESP fauxmo;
 WiFiManager wifiManager;
 
 void setup() {   
 
-    //gpio_config_t io_conf;
-    //io_conf.mode =  GPIO_MODE_OUTPUT;
-    //io_conf.pin_bit_mask = (1 << OUTPUT_PIN_1) | (1 << OUTPUT_PIN_2) | (1ULL << OUTPUT_PIN_3); //Se o pino for 32 ou mais, precisa do ULL 
-    //gpio_config(&io_conf);  
-
+/*
+    gpio_config_t io_conf;
+    io_conf.mode =  GPIO_MODE_OUTPUT;
+    io_conf.pin_bit_mask = (1 << OUTPUT_PIN_1) | (1 << OUTPUT_PIN_2) | (1ULL << OUTPUT_PIN_3); //Se o pino for 32 ou mais, precisa do ULL 
+    gpio_config(&io_conf);  
+*/
     pinMode(OUTPUT_PIN_1, OUTPUT);       
-    
+    pinMode(OUTPUT_PIN_2, OUTPUT);  
+    pinMode(OUTPUT_PIN_3, OUTPUT);  
+
     //Lê o nome da eeprom    //String name = readName(0);        //char deviceName[name.length() + 1];    //strcpy(deviceName, name.c_str());
     // Add virtual devices -> &readName(0)[0] = ponter to a char fom a string
     fauxmo.addDevice(&readName(0)[0], DEVICE_TYPE, OUTPUT_PIN_1);
@@ -84,32 +89,52 @@ void setup() {
         // Otherwise comparing the device_name is safer.
 
         //VENTILADOR START
-        /*
+        
         if(state == false)        
         {
+            digitalWrite(OUTPUT_PIN_1, LOW);
+            digitalWrite(OUTPUT_PIN_2, LOW);
+            digitalWrite(OUTPUT_PIN_3, LOW);
+            /*
             GPIO.out_w1tc = (1 << OUTPUT_PIN_1) | (1 << OUTPUT_PIN_2);
             GPIO.out1_w1tc.val = (1 << (OUTPUT_PIN_3 - 32));
+            */
         }        
         
         else if(value <= 85)  {
+            digitalWrite(OUTPUT_PIN_1, HIGH);
+            digitalWrite(OUTPUT_PIN_2, LOW);
+            digitalWrite(OUTPUT_PIN_3, LOW);
+            /*
             GPIO.out_w1tc = (1 << OUTPUT_PIN_2);
             GPIO.out1_w1tc.val = (1 << (OUTPUT_PIN_3 - 32));
             GPIO.out_w1ts = (1 << OUTPUT_PIN_1);
+            */
         }   
         else if (value > 85 && value <= 170)  {
+            digitalWrite(OUTPUT_PIN_1, LOW);
+            digitalWrite(OUTPUT_PIN_2, HIGH);
+            digitalWrite(OUTPUT_PIN_3, LOW);
+            /*
             GPIO.out_w1tc = (1 << OUTPUT_PIN_1);
             GPIO.out1_w1tc.val = (1 << (OUTPUT_PIN_3 - 32));
             GPIO.out_w1ts = (1 << OUTPUT_PIN_2);
+            */
         } 
         else if (value > 170)  {
+            digitalWrite(OUTPUT_PIN_1, LOW);
+            digitalWrite(OUTPUT_PIN_2, LOW);
+            digitalWrite(OUTPUT_PIN_3, HIGH);
+            /*
             GPIO.out_w1tc = (1 << OUTPUT_PIN_1) | (1 << OUTPUT_PIN_2);
             GPIO.out1_w1ts.val = (1 << (OUTPUT_PIN_3 - 32));
+            */
         } 
-        */
+        
         //VENTILADOR END
 
         //OUTROS
-        digitalWrite(pin, !state ?  HIGH : LOW);
+        //digitalWrite(pin, !state ?  HIGH : LOW);
          
     });
 
@@ -194,14 +219,14 @@ void wifiSetup() {
     WiFi.mode(WIFI_STA);
     wifiManager.autoConnect(&readName(0)[0]);
 
-    
+    /*
     IPAddress _ip, _gw, _sn;
     _ip.fromString(static_ip);
     _gw.fromString(static_gw);
     _sn.fromString(static_sn);
 
     wifiManager.setSTAStaticIPConfig(_ip, _gw, _sn);
-    
+    */
 }
 
 String readName(byte startAdress){
