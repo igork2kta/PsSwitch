@@ -24,7 +24,7 @@ void checkWiFiConnection();
 
 //============PARAMETRIZATION==========//
 #define SERIAL_BAUDRATE       115200
-#define DEVICE_TYPE           "VENTILADOR"
+#define DEVICE_TYPE           "FAN"
 #define OUTPUT_PIN_1          12
 #define OUTPUT_PIN_2          25
 #define OUTPUT_PIN_3          32
@@ -33,7 +33,7 @@ void checkWiFiConnection();
 //12, 25, 32 -> Ventilador Pequeno
 
 
-#if defined(ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3)
+#if defined(ESP32) && !defined(CONFIG_IDF_TARGET_ESP32C3) //ESP32C3 não possui touch
   #define TOUCH_ENABLED       true
   #define MULTI_CORE          true
   void TaskHandleWiFi(void *pvParameters); //Para o ESP32, o wifi serão tratados em um núcleo a parte
@@ -75,8 +75,6 @@ void setup() {
     
     wifiSetup();
 
-    
-
     //Lê o nome da eeprom    //String name = readName(0);        //char deviceName[name.length() + 1];    //strcpy(deviceName, name.c_str());
     // Add virtual devices -> &readName(0)[0] = pointer to a char fom a string
     fauxmo.addDevice(&readName(0)[0], DEVICE_TYPE, OUTPUT_PIN_1);
@@ -110,8 +108,8 @@ void setup() {
 
     bool startState = getStartState();
 
-    //para ventilador inicia com potencia minima
-    if(strcmp(DEVICE_TYPE, "VENTILADOR") == 0 ) 
+    //para FAN inicia com potencia minima
+    if(strcmp(DEVICE_TYPE, "FAN") == 0 ) 
         fauxmo.setState(0,startState,1);
     else 
         fauxmo.setState(0,startState,startState ? 1 : 0);
@@ -125,9 +123,7 @@ void setup() {
 
     //Define o comando para resetar o dispositivo.
     fauxmo.onReset([]{resetDevice();});
-    //fauxmo.onSetOtaState([]{startOta();});
     touchCalibration();
-    //initializeOTAService();
 
     //Configura o segundo núcleo do ESP32 para verificar o wifi
     #if MULTI_CORE
